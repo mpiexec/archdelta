@@ -1,13 +1,11 @@
 #!/bin/bash
 #
-# Thu, 16 Jun 2016 11:33:14
+# Sun, 12 Mar 2017 23:48:44
 
 set -e 
 
 function usage {
-	cat<<-EOF
-	usage: `basename $0` <list> <dir>
-	EOF
+	echo -e "Usage: $0 <list> <dir>"
 	exit
 }
 
@@ -16,21 +14,46 @@ function die {
 	exit
 }
 
-[ $# -ne 2 ] && usage
+function checkfile {
+	if [[ ! -f "$1" ]]; then
+		die "--: file \`$1' not found"
+		exit
+	fi
+}
 
-list="$1"
-dir="$2"
+function checkdir {
+	if [[ ! -d "$1" ]]; then
+		die "--: dir \`$1' not found"
+		exit
+	fi
+}
 
-# check list
-[ -f "$list" ] || die "list \`$list' not found"
-# check dir
-[ -d "$dir" ] || die "dir \`$dir' not found"
+skiped=0
 
-# main
+if [[ $# -ne 2 ]]; then
+	usage
+else
+	lst="$1"
+	dir="$2"
+fi
+
+checkfile "$lst"
+checkdir "$dir"
+
 while read item; do
-	[ -f "${dir}/${item}" ] \
-		&& echo "ok: ${dir}/${item}" \
-		|| die "--: ${dir}/${item}"
-done < "$list"
+	case ${item::1} in
+	'#')
+		skiped=1
+		continue
+		;;
+	esac
+	checkfile "${dir}/${item}"
+	echo -e "ok: ${dir}/${item}"
+done < "$lst" 
 
-echo -e "--\nAll ok!"
+if (( !skiped )); then 
+	echo -e "--\nAll ok!"
+else
+	echo -e "--\nSkiped:"
+	grep ^# "$lst"
+fi
